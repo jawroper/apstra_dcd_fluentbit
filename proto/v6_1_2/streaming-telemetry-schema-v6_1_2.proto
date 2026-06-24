@@ -1,0 +1,764 @@
+// Copyright (c) 2016 Apstrktr, Inc.  All rights reserved.
+// Apstrktr, Inc. Confidential and Proprietary.
+
+syntax = "proto2";
+
+option go_package = "./";
+
+package dcd.streaming.v6_1_2;
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+enum DeviceState {
+  DEVICE_STATE_IS_ACTIVE = 0;
+  DEVICE_STATE_IS_READY = 1;
+  DEVICE_STATE_IS_NOCOMMS = 2;
+  DEVICE_STATE_IS_MAINT = 3;
+  DEVICE_STATE_IS_REBOOTING = 4;
+  DEVICE_STATE_OOS_STOCKED = 5;
+  DEVICE_STATE_OOS_QUARANTINED = 6;
+  DEVICE_STATE_OOS_READY = 7;
+  DEVICE_STATE_OOS_NOCOMMS = 8;
+  DEVICE_STATE_OOS_DECOMM = 9;
+  DEVICE_STATE_OOS_MAINT = 10;
+  DEVICE_STATE_OOS_REBOOTING = 11;
+  DEVICE_STATE_ERROR = 12;
+}
+
+message DeviceStateEvent {
+  optional DeviceState state = 1;
+}
+
+enum StreamingType {
+  STREAMING_TYPE_PERFMON = 0;
+  STREAMING_TYPE_EVENTS = 1;
+  STREAMING_TYPE_ALERTS = 2;
+}
+
+enum StreamingProtocol {
+  STREAMING_PROTOCOL_PROTOBUF_OVER_TCP = 0;
+}
+
+enum StreamingStatus {
+  STREAMING_STATUS_UP = 0;
+  STREAMING_STATUS_DOWN = 1;
+}
+
+enum StreamingSequencingMode {
+  STREAMING_UNSEQUENCED = 0;
+  STREAMING_SEQUENCED = 1;
+}
+
+message StreamingEvent {
+  optional string dcd_server = 1; // hostname of DCD-server
+  optional StreamingType  streaming_type = 2;
+  optional StreamingProtocol protocol = 3;
+  optional StreamingStatus status = 4;
+  optional StreamingSequencingMode sequencing_mode = 5;
+}
+
+message CablePeerEvent {
+  optional string lcl_device_id = 1;
+  optional string lcl_hostname = 2;
+  optional string lcl_ifname = 3;
+  optional string rmt_hostname = 4;
+  optional string rmt_ifname = 5;
+  optional string rmt_sysdescr = 6;
+}
+
+message BGPNeighborEvent {
+  optional string lcl_hostname = 1;
+  optional string lcl_ipaddr = 2;
+  optional uint32 lcl_asn = 3;
+  optional BgpSessionState state = 4;
+  optional string rmt_ipaddr = 5;
+  optional uint32 rmt_asn = 6;
+  optional string vrf_name = 7;
+  optional BgpSessionAddressFamily addr_family = 8;
+}
+
+enum BgpSessionAddressFamily {
+  IPV4 = 0;
+  IPV6 = 1;
+  EVPN = 2;
+}
+
+enum LinkStatus {
+  LINK_UP = 0;
+  LINK_DOWN = 1;
+  LINK_UNKNOWN = 2;
+  LINK_MISSING = 3;
+}
+
+message LinkStatusEvent {
+  optional string hostname = 1;
+  optional string ifname = 2;
+  optional LinkStatus state = 3;
+}
+
+enum MacState {
+  MAC_ADD = 0;
+  MAC_DELETE = 1;
+  MAC_MOVE = 2;
+}
+
+message MacEvent {
+  optional string macaddress = 1;
+  optional string intfname = 2;
+  optional uint32 vlan = 3;
+  optional MacState state = 4;
+}
+
+enum ArpState {
+  ARP_ADD = 0;
+  ARP_DELETE = 1;
+}
+
+message ArpEvent {
+  optional string ipaddress = 1;
+  optional string mac = 2;
+  optional string intfname = 3;
+  optional ArpState state = 4;
+  optional string vrfname = 5;
+}
+
+message LagEvent {
+  optional string hostname = 1;
+  optional string lagname = 2;
+  optional uint32 interfacesupcount = 3;
+  repeated string interfacesup = 4;
+}
+
+enum MlagDomainState {
+  MLAG_UNKNOWN = 0;
+  MLAG_MISSING = 1;
+  MLAG_DISABLED = 2;
+  MLAG_INACTIVE = 3;
+  MLAG_ACTIVE = 4;
+}
+
+enum MlagIntfState {
+  MLAG_INTF_UNKNOWN = 0;
+  MLAG_INTF_MISSING = 1;
+  MLAG_INTF_DISABLED = 2;
+  MLAG_INTF_CONFIGURED = 3;
+  MLAG_INTF_INACTIVE = 4;
+  MLAG_INTF_ACTIVE_PARTIAL = 5;
+  MLAG_INTF_ACTIVE_FULL = 6;
+}
+
+message MlagEvent {
+  optional string domain_id = 1;
+  optional MlagDomainState domain_state = 2;
+  optional string intfname = 3;
+  optional MlagIntfState intf_state = 4;
+}
+
+message ExtensibleServiceEvent {
+  optional string key = 1;
+  optional string value = 2;
+}
+
+message RouteEvent {
+  optional string dest_network = 1;
+  optional RouteEntryStatus status = 2;
+  optional string hostname = 3;
+}
+
+enum RouteState {
+  ROUTE_ADD = 0;
+  ROUTE_DELETE = 1;
+}
+
+message EvpnType3RouteEvent {
+  optional RouteState state = 1;
+  optional string system_id = 2;
+  optional uint32 vni = 3;
+  optional string next_hop = 4;
+  optional string rd = 5;
+  optional string rt = 6;
+}
+
+message ActiveFloodlistEvent {
+  optional RouteState state = 1;
+  optional string system_id = 2;
+  optional uint32 vni = 3;
+  optional string vtep = 4;
+}
+
+message EvpnType5RouteEvent {
+  optional RouteState state = 1;
+  optional string system_id = 2;
+  optional string af = 3;
+  optional string subnet = 4;
+  optional string next_hop = 5;
+  optional string rd = 6;
+  optional string rt = 7;
+}
+
+message Event {
+  optional string id = 1; // uuid
+  oneof data {
+    DeviceStateEvent device_state = 2;
+    StreamingEvent streaming = 3;
+    CablePeerEvent cable_peer = 4;
+    BGPNeighborEvent bgp_neighbor = 5;
+    LinkStatusEvent link_status = 6;
+    MacEvent mac_state = 7;
+    ArpEvent arp_state = 8;
+    LagEvent lag_state = 9;
+    MlagEvent mlag_state = 10;
+    ExtensibleServiceEvent extensible_event = 11;
+    RouteEvent route_state = 12;
+  }
+}
+
+enum AlertSeverity {
+  ALERT_LOW = 0;
+  ALERT_MEDIUM = 1;
+  ALERT_HIGH = 2;
+  ALERT_CRITICAL = 3;
+}
+
+message HostnameAlert {
+   optional string expected_hostname = 1;
+   optional string actual_hostname = 2;
+}
+
+message ConfigDeviationAlert {
+}
+
+enum RouteEntryStatus {
+  ROUTE_ENTRY_STATUS_UNKNOWN = 0;
+  ROUTE_ENTRY_STATUS_UP = 1;
+  ROUTE_ENTRY_STATUS_PARTIAL = 2;
+  ROUTE_ENTRY_STATUS_MISSING = 3;
+}
+
+// Seems like not used in any proto message
+enum NextHopStatus {
+  NEXT_HOP_STATUS_UNKNOWN = 0;
+  NEXT_HOP_STATUS_UP = 1;
+  NEXT_HOP_STATUS_MISSING = 2;
+}
+
+// Seems like not used in any proto message
+enum RouteType {
+  ROUTE_TYPE_UNKNOWN = 0;
+  ROUTE_TYPE_DIRECT = 1;
+  ROUTE_TYPE_BGP = 2;
+  ROUTE_TYPE_STAT = 3;
+}
+
+message LivenessAlert {
+  repeated string expected_agents = 1;
+  repeated string actual_agents = 2;
+  optional bool alive = 3;
+}
+
+message ExtensibleAlert {
+  optional string key = 1;
+  optional string expected = 2;
+  optional string actual = 3;
+}
+
+enum DeploymentStatus {
+  DEPLOYMENT_STATUS_INPROGRESS = 0;
+  DEPLOYMENT_STATUS_SUCCEEDED = 1;
+  DEPLOYMENT_STATUS_FAILED = 2;
+}
+
+message DeploymentAlert {
+  optional DeploymentStatus expected_deployment_status = 1;
+  optional DeploymentStatus actual_deployment_status = 2;
+}
+
+message BlueprintRenderingAlert {
+   repeated string failed_systems = 1;
+}
+
+message RouteAlert {
+  optional string ip = 1;
+
+  optional RouteEntryStatus expected_dest_status = 2;
+  optional RouteEntryStatus actual_dest_status = 3;
+}
+
+message LagAlert {
+  optional string hostname = 1;
+  optional string lagname = 2;
+
+  optional uint32 expected_ifup_count = 3;
+  optional uint32 actual_ifup_count = 4;
+
+  repeated string expected_interfaces_up = 5;
+  repeated string actual_interfaces_up = 6;
+}
+
+enum StreamingAlertReason {
+  STREAMING_ALERT_REASON_FAILED_CONNECTION = 0;
+  STREAMING_ALERT_REASON_TIMEOUT = 1;
+  STREAMING_ALERT_REASON_DNS_FAILURE = 2;
+  STREAMING_ALERT_REASON_WRITE_TIMEOUT = 3;
+}
+
+message StreamingAlert {
+  optional string dcd_server = 1; // hostname of DCD-server
+  optional StreamingType streaming_type = 2;
+  optional StreamingProtocol protocol = 3;
+  optional StreamingAlertReason reason = 4;
+  optional StreamingSequencingMode sequencing_mode = 5;
+}
+
+message CablePeerMismatchAlert {
+  optional string lcl_hostname = 1;
+  optional string lcl_ifname = 2;
+  optional string exp_hostname = 3;
+  optional string exp_ifname = 4;
+  optional string rmt_hostname = 5;
+  optional string rmt_ifname = 6;
+  optional string rmt_sysdescr = 7;
+}
+
+enum BgpSessionState {
+  BGP_SESSION_UP = 0;
+  BGP_SESSION_DOWN = 1;
+  BGP_SESSION_MISSING = 2;
+  BGP_SESSION_UNKNOWN = 3;
+}
+
+message BGPNeighborMismatchAlert {
+  optional string lcl_hostname = 1;
+  optional string lcl_ipaddr = 2;
+  optional uint32 lcl_asn = 3;
+  optional string rmt_ipaddr = 4;
+  optional uint32 rmt_asn = 5;
+  optional BgpSessionState expected_state = 6;
+  optional BgpSessionState actual_state   = 7;
+  optional string rmt_name = 8;
+  optional string vrf_name = 9;
+  optional BgpSessionAddressFamily addr_family = 10;
+
+}
+
+message InterfaceLinkStatusMismatchAlert {
+  optional string hostname = 1;
+  optional string ifname = 2;
+  optional LinkStatus expected_ifstatus = 3;
+  optional LinkStatus actual_ifstatus = 4;
+}
+
+message KeyValuePair {
+  optional string key = 1;
+  optional string value = 2;
+}
+
+message ProbeAlert {
+  optional int64 expected_int = 1;
+  optional int64 actual_int = 2;
+  optional double expected_float = 3;
+  optional double actual_float = 4;
+  optional string expected_discrete_state = 5;
+  optional string actual_discrete_state = 6;
+  optional string probe_id = 7;
+  optional string stage_name = 8;
+  repeated KeyValuePair key_value_pairs = 9;
+  optional string item_id = 10;
+  optional string expected_text = 11;
+  optional string actual_text = 12;
+  optional string probe_label = 13;
+  optional int64 expected_int_max = 14;
+  optional double expected_float_max = 15;
+  optional string predefined_probe_name = 16;
+}
+
+message MacAlert {
+  optional string macaddress = 1;
+  optional string intfname = 2;
+  optional uint32 vlan = 3;
+  optional uint32 movecount = 4;
+  optional google.protobuf.Duration actual_move_interval = 5;
+  optional google.protobuf.Duration expected_max_interval = 6;
+}
+
+message ArpAlert {
+  optional string ipaddress = 1;
+  optional string mac = 2;
+  optional string intfname = 3;
+}
+
+message MlagAlert {
+  optional string hostname = 1;
+  optional string domain_id = 2;
+  optional uint32 mlag_id = 3;
+  optional MlagDomainState expected_domain_state = 4;
+  optional MlagDomainState actual_domain_state = 5;
+  optional string ifname = 6;
+  optional MlagIntfState expected_intf_state = 7;
+  optional MlagIntfState actual_intf_state = 8;
+  optional string peer_link = 9;
+  optional string peer_link_status = 10;
+  optional string expected_peer_link_status = 11;
+}
+
+message TestAlert {
+  optional uint64 test_int = 1;
+}
+
+message InterfaceCounters {
+  optional uint64 tx_unicast_packets = 1;
+  optional uint64 tx_broadcast_packets = 2;
+  optional uint64 tx_multicast_packets = 3;
+  optional uint64 tx_bytes = 4;
+  optional uint64 rx_unicast_packets = 5;
+  optional uint64 rx_broadcast_packets = 6;
+  optional uint64 rx_multicast_packets = 7;
+  optional uint64 rx_bytes = 8;
+
+  optional uint64 tx_error_packets = 9;
+  optional uint64 tx_discard_packets = 10;
+  optional uint64 rx_error_packets = 11;
+  optional uint64 rx_discard_packets = 12;
+  optional uint64 alignment_errors = 13;
+  optional uint64 fcs_errors = 14;
+  optional uint64 symbol_errors = 15;
+  optional uint64 runts = 16;
+  optional uint64 giants = 17;
+
+  optional google.protobuf.Duration delta = 18;
+}
+
+message SystemInfo {
+  optional float cpu_user = 1;
+  optional float cpu_system = 2;
+  optional float cpu_idle = 3;
+  optional uint64 memory_used = 4;
+  optional uint64 memory_total = 5;
+}
+
+message ProcessInfo {
+  optional string process_name = 1;
+  optional float cpu_user = 2;
+  optional float cpu_system = 3;
+  optional uint64 memory_used = 4;
+}
+
+message FileInfo {
+  optional string file_name = 1;
+  optional uint64 file_size = 2;
+}
+
+message SysResourceCounters {
+  optional SystemInfo system_info= 1;
+  repeated ProcessInfo process_info = 2;
+  repeated FileInfo file_info = 3;
+}
+
+message ProbeProperty {
+  optional string name = 1;
+  // Value contains json encoded data
+  optional string value = 2;
+}
+
+message InterfaceCountersUtilization {
+  optional double tx_utilization = 1;
+  optional double rx_utilization = 2;
+  optional uint64 tx_unicast_pps = 3;
+  optional uint64 tx_broadcast_pps = 4;
+  optional uint64 tx_multicast_pps = 5;
+  optional uint64 tx_bps = 6;
+  optional uint64 tx_error_pps = 7;
+  optional uint64 tx_discard_pps = 8;
+  optional uint64 rx_unicast_pps = 9;
+  optional uint64 rx_broadcast_pps = 10;
+  optional uint64 rx_multicast_pps = 11;
+  optional uint64 rx_bps = 12;
+  optional uint64 rx_error_pps = 13;
+  optional uint64 rx_discard_pps = 14;
+  optional uint64 alignment_errors_per_second = 15;
+  optional uint64 fcs_errors_per_second = 16;
+  optional uint64 symbol_errors_per_second = 17;
+  optional uint64 runts_per_second = 18;
+  optional uint64 giants_per_second = 19;
+  optional string system_id = 20;
+  optional string interface = 21;
+  optional uint64 tx_total_pps = 22;
+  optional double tx_unicast_utilization = 23;
+  optional double tx_broadcast_utilization = 24;
+  optional double tx_multicast_utilization = 25;
+  optional double tx_discard_utilization = 26;
+  optional uint64 rx_total_pps = 27;
+  optional double rx_unicast_utilization = 28;
+  optional double rx_broadcast_utilization = 29;
+  optional double rx_multicast_utilization = 30;
+  optional double rx_discard_utilization = 31;
+}
+
+message SystemInterfaceUtilization {
+  optional uint64 aggregate_tx_bps = 1;
+  optional uint64 aggregate_rx_bps = 2;
+  optional double max_ifc_tx_utilization = 3;
+  optional double max_ifc_rx_utilization = 4;
+  optional double aggregate_tx_utilization = 5;
+  optional double aggregate_rx_utilization = 6;
+  optional string system_id = 7;
+}
+
+enum FiberType {
+    FIBER_TYPE_UNKNOWN = 0;
+    FIBER_TYPE_SINGLE_MODE = 1;
+    FIBER_TYPE_MULTI_MODE = 2;
+}
+
+message OpticalXcvrInterface {
+    optional string system_id = 1;
+    optional string interface = 2;
+
+    optional float wave_length = 3;
+    optional string media_type = 4;
+    optional string vendor_sn = 5;
+    optional FiberType fiber_type = 6;
+    optional string vendor = 7;
+    optional string part_number = 8;
+
+    optional float temperature_low_warn = 9;
+    optional float temperature_high_warn = 10;
+    optional float temperature_low_alarm = 11;
+    optional float temperature_high_alarm = 12;
+
+    optional float voltage_low_warn = 13;
+    optional float voltage_high_warn = 14;
+    optional float voltage_low_alarm = 15;
+    optional float voltage_high_alarm = 16;
+
+    optional float tx_power_low_warn = 17;
+    optional float tx_power_high_warn = 18;
+    optional float tx_power_low_alarm = 19;
+    optional float tx_power_high_alarm = 20;
+
+    optional float rx_power_low_warn = 21;
+    optional float rx_power_high_warn = 22;
+    optional float rx_power_low_alarm = 23;
+    optional float rx_power_high_alarm = 24;
+
+    optional float tx_bias_low_warn = 25;
+    optional float tx_bias_high_warn = 26;
+    optional float tx_bias_low_alarm = 27;
+    optional float tx_bias_high_alarm = 28;
+
+    optional float temperature = 29;
+    optional bool temperature_has_low_warn = 30;
+    optional bool temperature_has_high_warn = 31;
+    optional bool temperature_has_low_alarm = 32;
+    optional bool temperature_has_high_alarm = 33;
+
+    optional float voltage = 34;
+    optional bool voltage_has_low_warn = 35;
+    optional bool voltage_has_high_warn = 36;
+    optional bool voltage_has_low_alarm = 37;
+    optional bool voltage_has_high_alarm = 38;
+}
+
+message OpticalXcvrLane {
+    optional string system_id = 1;
+    optional string interface = 2;
+    optional uint32 lane = 3;
+
+    optional float tx_power = 4;
+    optional bool tx_power_has_low_warn = 5;
+    optional bool tx_power_has_high_warn = 6;
+    optional bool tx_power_has_low_alarm = 7;
+    optional bool tx_power_has_high_alarm = 8;
+
+    optional float rx_power = 9;
+    optional bool rx_power_has_low_warn = 10;
+    optional bool rx_power_has_high_warn = 11;
+    optional bool rx_power_has_low_alarm = 12;
+    optional bool rx_power_has_high_alarm = 13;
+
+    optional float tx_bias = 14;
+    optional bool tx_bias_has_low_warn = 15;
+    optional bool tx_bias_has_high_warn = 16;
+    optional bool tx_bias_has_low_alarm = 17;
+    optional bool tx_bias_has_high_alarm = 18;
+}
+
+enum AddressFamily {
+    ADDRESS_FAMILY_IPV4 = 0;
+    ADDRESS_FAMILY_IPV6 = 1;
+    ADDRESS_FAMILY_EVPN = 2;
+}
+
+enum FsmState {
+    FSM_STATE_IDLE = 0;
+    FSM_STATE_CONNECT = 1;
+    FSM_STATE_ACTIVE = 2;
+    FSM_STATE_OPENSENT = 3;
+    FSM_STATE_OPENCONFIRM = 4;
+    FSM_STATE_ESTABLISHED = 5;
+    FSM_STATE_INTRANSITION = 6;
+}
+
+enum BgpSessionStatus {
+    BGP_SESSION_STATUS_UNKNOWN = 0;
+    BGP_SESSION_STATUS_DOWN = 1;
+    BGP_SESSION_STATUS_UP = 2;
+    BGP_SESSION_STATUS_MISSING = 3;
+}
+
+message BgpSession {
+    optional AddressFamily af = 1;
+    optional uint32 dest_asn = 2;
+    optional string dest_ip = 3;
+    optional uint32 source_asn = 4;
+    optional string source_ip = 5;
+    optional string system_id = 6;
+    optional string vrf_name = 7;
+
+    optional uint64 flap_count = 8;
+    optional uint64 flap_count_inc = 9;
+    optional FsmState fsm_state = 10;
+    optional BgpSessionStatus status = 11;
+}
+
+enum ServiceHealthCollectionType {
+    SERVICE_HEALTH_COLLECTION_TYPE_INITIALIZING = 0;
+    SERVICE_HEALTH_COLLECTION_TYPE_POLLING = 1;
+    SERVICE_HEALTH_COLLECTION_TYPE_GRPCPERIODIC = 2;
+    SERVICE_HEALTH_COLLECTION_TYPE_GRPCONCHANGE = 3;
+}
+
+message ServiceHealth {
+    optional string system_id = 1;
+    optional string service_name = 2;
+
+    optional ServiceHealthCollectionType collection_type = 3;
+    optional bool has_service_started = 4;
+    optional uint64 run_count = 5;
+    optional uint64 success_count = 6;
+    optional uint64 failure_count = 7;
+    optional uint64 timeout_count = 8;
+    optional uint64 underrun_count = 9;
+    optional bool did_last_fail = 10;
+    optional bool did_last_timeout = 11;
+    optional bool did_last_underrun = 12;
+    optional google.protobuf.Duration execution_time = 13;
+    optional google.protobuf.Duration waiting_time = 14;
+    optional uint64 grpc_initiate_count = 15;
+    optional uint64 grpc_message_count = 16;
+    optional uint64 grpc_reset_count = 17;
+    optional uint64 grpc_server_reset_count = 18;
+    optional uint64 grpc_connection_reset_count = 19;
+    optional uint64 grpc_config_change_reset_count = 20;
+    optional uint64 grpc_in_sync_count = 21;
+    optional uint64 grpc_total_sync_count = 22;
+    optional google.protobuf.Duration grpc_average_initial_sync_time = 23;
+    optional uint64 grpc_initial_sync_timeout_count = 24;
+    optional uint64 grpc_in_progress_count = 25;
+    optional google.protobuf.Duration grpc_average_waiting_time = 26;
+    optional uint64 grpc_periodic_response_timeout_count = 27;
+    optional uint64 grpc_sequence_number_overrun = 28;
+    optional uint64 grpc_response_processing_failure = 29;
+    optional uint64 grpc_round_count = 30;
+    optional uint64 grpc_total_count = 31;
+}
+
+message MultiColumnValue {
+    map<string, ProbeValue> values = 1;
+}
+
+message ProbeValue {
+    oneof value {
+        bool bool_value = 1;
+
+        sint32 s32_value = 2;
+        uint32 u32_value = 3;
+
+        sint64 s64_value = 4;
+        uint64 u64_value = 5;
+
+        float f32_value = 6;
+        double f64_value = 7;
+
+        string string_value = 8;
+    }
+}
+
+message ProbeMessage {
+  optional string probe_id = 1;
+  optional string stage_name = 2;
+  optional string item_id = 3;
+  optional string probe_label = 4;
+  repeated ProbeProperty property = 5;
+
+  oneof value {
+    ActiveFloodlistEvent active_floodlist = 6;
+    BgpSession bgp_session = 7;
+    EvpnType3RouteEvent evpn_type3_route_state = 8;
+    EvpnType5RouteEvent evpn_type5_route_state = 9;
+    InterfaceCountersUtilization interface_counters_utilization = 10;
+    MultiColumnValue multi_column_value = 11;
+    OpticalXcvrInterface optical_xcvr_interface = 12;
+    OpticalXcvrLane optical_xcvr_lane = 13;
+    ServiceHealth service_health = 14;
+    SystemInterfaceUtilization system_interface_utilization = 15;
+  }
+}
+
+message PerfMon {
+  oneof data {
+     InterfaceCounters interface_counters = 1;
+     SysResourceCounters system_resource_counters = 2;
+     ProbeMessage probe_message = 4;
+  }
+  optional google.protobuf.Duration time_delta = 3;
+}
+
+message Alert {
+  optional AlertSeverity severity = 1;
+  optional google.protobuf.Timestamp first_seen = 2;
+  optional string id = 3; // uuid
+  optional bool raised = 4; // true if raised, false if cleared
+  oneof data {
+    ConfigDeviationAlert config_deviation_alert = 5;
+    StreamingAlert streaming_alert = 6;
+    CablePeerMismatchAlert cable_peer_mismatch_alert = 7;
+    BGPNeighborMismatchAlert bgp_neighbor_mismatch_alert = 8;
+    InterfaceLinkStatusMismatchAlert interface_link_status_mismatch_alert = 9;
+    HostnameAlert hostname_alert = 10;
+    RouteAlert route_alert = 11;
+    LivenessAlert liveness_alert = 12;
+    DeploymentAlert deployment_alert = 13;
+    BlueprintRenderingAlert blueprint_rendering_alert = 14;
+    MacAlert mac_alert = 15;
+    ArpAlert arp_alert = 16;
+    LagAlert lag_alert = 17;
+    MlagAlert mlag_alert = 18;
+    ProbeAlert probe_alert = 19;
+    ExtensibleAlert extensible_alert = 20;
+    TestAlert test_alert = 1000;
+  }
+  optional string anomalous_node_id = 21;
+}
+
+message DcdMessage {
+  optional google.protobuf.Timestamp timestamp = 1;
+  optional string origin_name = 2; // originating entity name
+  optional string origin_hostname = 6;
+  optional string origin_role = 7;
+  optional string blueprint_label = 8;
+  optional string blueprint_id = 9;
+
+  oneof data {
+    Alert alert = 3;
+    Event event = 4;
+    PerfMon perf_mon = 5;
+  }
+}
+
+message DcdSequencedMessage {
+  optional uint64 seq_num = 1;
+  // space for preceding fields
+  optional bytes dcd_proto = 2; // serialized DcdMessage
+}
