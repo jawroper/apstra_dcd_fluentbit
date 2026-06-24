@@ -6,6 +6,9 @@ the two releases supported so far, but field *numbers* (the only thing that
 actually matters on the wire) do change, so a single schema can only
 correctly decode wire bytes from the one DCD version it was generated from.
 
+> **Note:** protbuf schema between patch releases don't change.
+>           Example:  6.1.0 and 6.1.2 use an identical schema
+
 Each `[INPUT]` block in `fluent-bit.conf` talks to exactly one DCD server, so
 it declares which release that server runs via the **`dcd_release`** config
 key:
@@ -21,6 +24,12 @@ key:
 
 If you run multiple `[INPUT] apstra_dcd` blocks against different DCD
 servers, each can independently declare its own `dcd_release`.
+
+> **Note:** Let's assume that 6.1.0 protobuf schema has been compiled, but
+>           the Apstra server is running 6.1.2. 6.1.2 schema is the same
+>           as the 6.1.0 schema. Instead of compiling the 6.1.2 schema, use
+>           the existing 6.1.0 schema and set the **`dcd_release`** to 6.1.0.
+
 
 ## Naming convention
 

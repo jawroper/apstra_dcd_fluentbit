@@ -1,7 +1,6 @@
-# Apstra DCD Telemetry Streaming — Fluent Bit Input Plugin
+# Apstra Data Center Director (DCD) Telemetry Streaming — Fluent Bit Input Plugin
 
-A Go port of the Apstra [`telegraf inputs/dcd`](https://github.com/Apstra/telegraf/tree/dcd-input/plugins/inputs/dcd) plugin, implemented as a native Fluent Bit input plugin using the [fluent-bit-go](https://github.com/fluent/fluent-bit-go) SDK.
-
+A Go port of the Apstra AOSOM github repo (https://github.com/Apstra/aosom-streaming), implemented as a native Fluent Bit input plugin using the [fluent-bit-go](https://github.com/fluent/fluent-bit-go) SDK.
 
 ---
 
@@ -13,7 +12,7 @@ DCD Server
    │  [2-byte big-endian length][N-byte DcdSequencedMessage, wrapping DcdMessage]
    ▼
 ┌─────────────────────────────────────────────────────┐
-│  apstra_dcd_fluentbit.so  (this plugin)                   │
+│  apstra_dcd_fluentbit.so  (this plugin)             │
 │                                                     │
 │  FLBPluginInit                                      │
 │    ├── restapi.Client.Login()                       │
@@ -26,9 +25,9 @@ DCD Server
 │  SAME decode → record → channel → callback path —   │
 │  there is no internal type-based routing. Every     │
 │  record (regardless of series, e.g.                 │
-│  "interface_counters", "alert_liveness",             │
-│  "event_link_status") goes to every configured       │
-│  [OUTPUT] that matches the [INPUT]'s Tag.            │
+│  "interface_counters", "alert_liveness",            │
+│  "event_link_status") goes to every configured      │
+│  [OUTPUT] that matches the [INPUT]'s Tag.           │
 │                                                     │
 │  FLBPluginInputCallbackCtx (called by Fluent Bit)   │
 │    └── drain listener.Records channel               │
@@ -43,12 +42,12 @@ DCD Server
             not something this plugin decides internally.
 ```
 
-**Sending everything to InfluxDB**: yes, this works — perfmon, alerts, and
-events are just records like any other to Fluent Bit, and one `[OUTPUT]
-influxdb` block with `Match *` (or matching this `[INPUT]`'s `Tag`) picks up
-all of them. See **[Output formats & InfluxDB](#output-formats--influxdb)**
-below for the config details (record format choice + `Auto_Tags`), since
-getting this right requires a couple of non-obvious settings.
+**Sending everything to InfluxDB**: perfmon, alerts, and events are just
+records like any other to Fluent Bit, and one `[OUTPUT] influxdb` block with
+`Match *` (or matching this `[INPUT]`'s `Tag`) picks up all of them.
+See **[Output formats & InfluxDB](#output-formats--influxdb)** below for the
+config details (record format choice + `Auto_Tags`), since getting this right
+requires a couple of non-obvious settings.
 
 ### Package layout
 
@@ -79,8 +78,9 @@ apstra_dcd_fluentbit/
 │   │   └── listener.go         # TCP server, 2-byte length-prefix frame reader
 │   │                            # (version-agnostic — takes a MessageHandler)
 │   └── promexport/
-│       ├── promexport.go       # native Prometheus /metrics exporter (PerfMon + alerts + events)
-│       └── promexport_test.go
+│       ├── promexport.go       # native Prometheus /metrics exporter (perfMon + alerts + events)
+│       ├── promexport_test.go
+|       └── README.md
 ├── proto/
 │   ├── README.md                # naming convention + how to add a new DCD release
 │   ├── v6_0_0/                  # DCD 6.0.0 .proto + generated .pb.go
@@ -105,7 +105,9 @@ for the full naming convention and how to add support for a new release.
 ## Record format
 
 Each record emitted to Fluent Bit is a flat map. The `series` key carries the
-measurement name, mirroring the Telegraf series name from the original plugin.
+measurement name, mirroring the series name from the original plugin. If a
+key:value pair has an empty value, it will **not** be emitted as part of the
+record.
 
 ```json
 {
@@ -140,10 +142,8 @@ Alert `status`: `1` = raised, `0` = cleared.
 Every record's timestamp comes from DCD's embedded `DcdMessage.timestamp`
 field — except when that value is implausible, in which case the plugin
 silently falls back to its own receipt time (`time.Now()`) instead, and logs
-a warning. This isn't theoretical: in production, an DCD server with a
-confirmed-correct system clock (verified via `date`) was observed streaming
-PerfMon timestamps that decoded to **2007** — roughly 19 years in the past —
-evidently from a stale or different clock source used specifically by its
+a warning. This isn't theoretical: in production, release 6.0.0 produced
+some records from a stale or different clock source used specifically by its
 streaming telemetry subsystem, separate from the system clock.
 
 "Implausible" means more than 24 hours off from this host's wall-clock time
@@ -158,7 +158,7 @@ W! [dcd] DCD-provided timestamp 2007-03-03T22:17:01Z is implausible (19y... from
 
 If you see this warning, it's worth checking DCD's own clock health, but
 it's not something this plugin can fix on DCD's behalf — the fallback to
-receipt time is the safety net, not a corrective measure.
+receipt time is the safety approach. It is **not** a corrective measure.
 
 ### Output formats
 
@@ -182,7 +182,7 @@ value. One `[OUTPUT] influxdb` block picks up all of them:
 ```ini
 [INPUT]
     Name          apstra_dcd
-    dcd_release   6.0.0
+    dcd_release   6.1.2
     dcd_server    192.168.57.250
     local_address 192.168.57.128
     port          7777
@@ -267,12 +267,11 @@ to all three from DCD but export only `perfmon` to Prometheus. When not set,
 defaults to whatever `streaming_types` is configured to. Accepts the same
 comma-separated values: `perfmon`, `alerts`, `events`, or any combination.
 
-> **Note:** Two `[INPUT]` blocks for this purpose don't work on current
-> Fluent Bit versions — `FLBPluginConfigKey` on a second instance of the
-> same Go input plugin returns empty/wrong values for config keys, causing
-> the second instance to fall back to the first instance's port and crash.
-> `prometheus_streaming_types` on the same `[INPUT]` block is the correct
-> solution.
+> **Note:** Separating prometheus into its own `[INPUT]` block for this purpose
+> don't work on current Fluent Bit versions. Use only a single `[INPUT]` block.
+
+
+To test if the internal prometheus HTTP server is seeing data:
 
 ```bash
 curl http://127.0.0.1:9112/metrics
@@ -387,16 +386,39 @@ This downloads `github.com/prometheus/client_golang` and its few transitive
 dependencies and writes a correct `go.sum`. After that, `make build` works
 normally and doesn't need network access again unless dependencies change.
 
+Both `make build` and `make install` support the optional argument of VERSION.
+The argument will be used to print a message in the journal subsystem indicating
+which apstra_dcd_fluentbit.so binary is being used by Fluent Bit. If the
+argument is not used, the printed message will state:
+
+```
+I! [dcd] apstra_dcd_fluentbit plugin version dev
+```
+
+Recommendation is to use the VERSION argument and set it to the last proto
+release compiled.
+
 ```bash
-make build
+make build VERSION=6.1.2
 # produces: apstra_dcd_fluentbit.so
 ```
 
 ### 3. Install
 
 ```bash
-make install
+sudo mkdir /usr/loca/lib/fluent-bit
+make install VERSION=6.1.2
 # copies apstra_dcd_fluentbit.so → /usr/local/lib/fluent-bit/
+```
+
+Edit your .bashrc to update the PATH env variable
+
+```ini
+export PATH=$PATH:/opt/fluent-bit/bin
+```
+
+```bash
+source ~/.bashrc
 ```
 
 ### 4. Configure Fluent Bit
@@ -412,10 +434,29 @@ Edit `deployments/fluent-bit.conf` with your DCD server details:
     port          7777
 ```
 
+For production move the statements above into /etc/fluent-bit/fluent-bit.conf
+
+You also need to let Fluent-bit know about the plugin
+
+Edit `/etc/fluent-bit/plugins.conf`
+
+```ini
+[PLUGINS]
+    Path /usr/local/lib/fluent-bit/apstra_dcd_fluentbit.so
+```
+
 ### 5. Run
+
+manually run Fluent Bit
 
 ```bash
 fluent-bit -c deployments/fluent-bit.conf
+```
+
+Or in production
+
+```bash
+sudo systemctl start fluent-bit.service
 ```
 
 Or with Docker:

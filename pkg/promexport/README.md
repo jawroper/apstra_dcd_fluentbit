@@ -117,13 +117,13 @@ use `prometheus_streaming_types`:
     ...
 ```
 
-| Value | Effect |
-|-------|--------|
-| not set (default) | Prometheus sees whatever `streaming_types` is set to |
-| `perfmon` | Only `interface_counters`, `system_info`, `process_info`, `file_info`, `probe_message`, etc. |
-| `alerts` | Only `alert_bgp_neighbor_mismatch`, `alert_liveness`, `alert_lag`, etc. |
-| `events` | Only `event_link_status`, `event_bgp_neighbor`, `event_device_state`, etc. |
-| `perfmon, alerts` | Any combination works — comma-separated, same syntax as `streaming_types` |
+| Value             | Effect                                                                                       |
+|-------------------|----------------------------------------------------------------------------------------------|
+| not set (default) | Prometheus sees whatever `streaming_types` is set to                                         |
+| `perfmon`         | Only `interface_counters`, `system_info`, `process_info`, `file_info`, `probe_message`, etc. |
+| `alerts`          | Only `alert_bgp_neighbor_mismatch`, `alert_liveness`, `alert_lag`, etc.                      |
+| `events`          | Only `event_link_status`, `event_bgp_neighbor`, `event_device_state`, etc.                   |
+| `perfmon, alerts` | Any combination works — comma-separated, same syntax as `streaming_types`                    |
 
 **Corner case — requesting a type not in `streaming_types`**: if
 `prometheus_streaming_types` includes a type that `streaming_types` doesn't
