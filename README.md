@@ -386,17 +386,15 @@ This downloads `github.com/prometheus/client_golang` and its few transitive
 dependencies and writes a correct `go.sum`. After that, `make build` works
 normally and doesn't need network access again unless dependencies change.
 
-Both `make build` and `make install` support the optional argument of VERSION.
-The argument will be used to print a message in the journal subsystem indicating
-which apstra_dcd_fluentbit.so binary is being used by Fluent Bit. If the
-argument is not used, the printed message will state:
+`make build` supports an optional VERSION argument which embeds a version
+string in the plugin, visible in the journal on startup. If not used, the
+plugin logs:
 
 ```
 I! [dcd] apstra_dcd_fluentbit plugin version dev
 ```
 
-Recommendation is to use the VERSION argument and set it to the last proto
-release compiled.
+Recommendation is to set VERSION to the DCD release you compiled against.
 
 ```bash
 make build VERSION=6.1.2
@@ -405,9 +403,13 @@ make build VERSION=6.1.2
 
 ### 3. Install
 
+`make install` must be run as root but does **not** need Go — build first
+as your normal user, then install with sudo:
+
 ```bash
-sudo mkdir /usr/loca/lib/fluent-bit
-make install VERSION=6.1.2
+sudo mkdir -p /usr/local/lib/fluent-bit
+make build VERSION=6.1.2
+sudo make install
 # copies apstra_dcd_fluentbit.so → /usr/local/lib/fluent-bit/
 ```
 

@@ -53,7 +53,8 @@ docker: build
 	docker build -t jawroper/apstra-dcd-fluentbit:latest -f deployments/Dockerfile .
 
 ## install: copy the .so to the Fluent Bit plugins directory
-install: build
+##          Run 'make build VERSION=x.y.z' first, then 'sudo make install'
+install:
 	install -m 755 $(BINARY) /usr/local/lib/fluent-bit/
 
 ## clean: remove build artifacts
