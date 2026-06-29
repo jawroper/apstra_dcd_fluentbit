@@ -394,7 +394,8 @@ plugin logs:
 I! [dcd] apstra_dcd_fluentbit plugin version dev
 ```
 
-Recommendation is to set VERSION to the DCD release you compiled against.
+Recommendation is to set VERSION to the DCD release the last proto
+release that has been compiled.
 
 ```bash
 make build VERSION=6.1.2
