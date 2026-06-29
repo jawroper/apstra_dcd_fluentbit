@@ -86,7 +86,7 @@ apstra_dcd_fluentbit/
 │   ├── v6_0_0/                  # DCD 6.0.0 .proto + generated .pb.go
 │   └── v6_1_2/                  # DCD 6.1.2 .proto + generated .pb.go
 ├── deployments/
-│   ├── Dockerfile              # multi-stage: builder + fluent/fluent-bit:3.1
+│   ├── Dockerfile              # three-stage: fluent-extract + builder + debian:12-slim runtime
 │   ├── fluent-bit.conf         # example configuration with all output options
 │   └── plugins.conf            # tells Fluent Bit where to load the .so
 ├── Makefile
@@ -459,16 +459,31 @@ Or in production
 sudo systemctl start fluent-bit.service
 ```
 
-Or with Docker:
+Or with Docker. The image is built locally from source — there is no pre-built
+image to pull. From the repository root:
 
 ```bash
-make docker
-docker run -d \
-  -e DCD_SERVER=192.168.57.250 \
-  -e LOCAL_IP=192.168.57.128 \
-  -p 7777:7777 \
-  jawroper/apstra_dcd_fluentbit:latest
+# Build the image (optionally embed a version string)
+docker build \
+  --build-arg VERSION=6.1.2 \
+  -f deployments/Dockerfile \
+  -t apstra_dcd_fluentbit:latest .
+
+# Run with host networking (recommended)
+sudo docker run -d \
+  --name apstra_dcd \
+  --network host \
+  --restart unless-stopped \
+  apstra_dcd_fluentbit:latest
 ```
+
+Before building, edit `deployments/fluent-bit.conf` with your DCD server
+details and ensure the `[SERVICE]` block uses container paths
+(`/fluent-bit/etc/`) rather than native paths (`/etc/fluent-bit/`).
+
+See **[DOCKER.md](DOCKER.md)** for the full guide covering deployment
+topologies, why three build stages are needed, Compose, volume mounts,
+configuration overrides, and troubleshooting.
 
 ---
 
