@@ -13,7 +13,7 @@ DCD Server
  Container host
  ┌─────────────────────────────────────────┐
  │  Docker container                       │
- │  Fluent Bit + apstra_dcd_fluentbit.so  │──→ InfluxDB / Prometheus / File
+ │  Fluent Bit + apstra_dcd_fluentbit.so   │──→ InfluxDB / Prometheus / File
  └─────────────────────────────────────────┘
 ```
 Use `--network host` or `-p 7777:7777/tcp` as shown below. The plugin
