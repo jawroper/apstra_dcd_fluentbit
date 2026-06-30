@@ -158,7 +158,7 @@ W! [dcd] DCD-provided timestamp 2007-03-03T22:17:01Z is implausible (19y... from
 
 If you see this warning, it's worth checking DCD's own clock health, but
 it's not something this plugin can fix on DCD's behalf — the fallback to
-receipt time is the safety approach. It is **not** a corrective measure.
+receipt time is the safest approach. It is **not** a corrective measure.
 
 ### Output formats
 
@@ -268,7 +268,7 @@ defaults to whatever `streaming_types` is configured to. Accepts the same
 comma-separated values: `perfmon`, `alerts`, `events`, or any combination.
 
 > **Note:** Separating prometheus into its own `[INPUT]` block for this purpose
-> don't work on current Fluent Bit versions. Use only a single `[INPUT]` block.
+> doesn't work on current Fluent Bit versions. Use only a single `[INPUT]` block.
 
 
 To test if the internal prometheus HTTP server is seeing data:
@@ -369,6 +369,22 @@ var releaseHandlers = map[string]func(*decoder.Decoder) func([]byte) ([]decoder.
     v6_1_2.Release: v6_1_2.NewHandler,
 }
 ```
+
+> **Note:** Every release of Apstra DCD comes with a proto file. It is accessible
+> from the Apstra UI under Platform -> Streaming -> Receivers ->
+> "Download messages description". You only need the proto file and not
+> the proto.pb file.
+>
+> **Note:** Proto files do not necessarily change every release. Before
+> compiling and adding the proto file from the most recent Apstra release
+> verify if there have been any changes.  If not, use the latest release
+> already compiled for this plugin.
+>
+>    Example:  The latest compiled release for this plugin is 6.1.2
+>              The customer installs Apstra 6.3.0. Comparing its proto file
+>              to the 6.1.2 proto file it is determined they are identical.
+>              Do not compile the 6.3.0 proto file and just run this plugin
+>              with the [INPUT] param 'dcd_release' set to '6.1.2'.
 
 ### 2. Build the shared library
 
